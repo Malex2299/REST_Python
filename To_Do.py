@@ -1,6 +1,6 @@
-from flask import jsonify, request, abort
-from flask import Flask
+from flask import Flask, request, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 
 # Configuración de la aplicación Flask y la base de datos SQLAlchemy
 app = Flask(__name__)
@@ -8,7 +8,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:123456@loca
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Definición del modelo de datos Tarea
+# Definición del modelo de Tarea
 class Tarea(db.Model):
     __tablename__ = 'To_Do'
     id = db.Column(db.Integer, primary_key=True)
@@ -22,12 +22,14 @@ class Tarea(db.Model):
             'fecha_limite': self.fecha_limite
         }
 
-# Creación de la base de datos y las tablas (si no existen)
+# Crear la base de datos y las tablas (si no existen)
 db.create_all()
 
-# Creación de una nueva tarea
+# Rutas de la API REST para la gestión de tareas
+
 @app.route('/tareas', methods=['POST'])
 def crear_tarea():
+    """Crea una nueva tarea"""
     if not request.json or not 'descripcion' in request.json:
         abort(400)
     
@@ -45,23 +47,23 @@ def crear_tarea():
     
     return jsonify({'tarea': tarea.a_dict()}), 201
 
-# Obtener todas las tareas
 @app.route('/tareas', methods=['GET'])
 def obtener_tareas():
+    """Obtiene todas las tareas"""
     tareas = Tarea.query.all()
     return jsonify({'tareas': [tarea.a_dict() for tarea in tareas]})
 
-# Obtener una tarea por ID
 @app.route('/tareas/<int:tarea_id>', methods=['GET'])
 def obtener_tarea(tarea_id):
+    """Obtiene una sola tarea por ID"""
     tarea = Tarea.query.get(tarea_id)
     if tarea is None:
         abort(404)
     return jsonify({'tarea': tarea.a_dict()})
 
-# Eliminar una tarea por ID
 @app.route('/tareas/<int:tarea_id>', methods=['DELETE'])
 def eliminar_tarea(tarea_id):
+    """Elimina una tarea por ID"""
     tarea = Tarea.query.get(tarea_id)
     if tarea is None:
         abort(404)
@@ -71,9 +73,9 @@ def eliminar_tarea(tarea_id):
     
     return jsonify({'mensaje': f'Se ha eliminado exitosamente la tarea con ID {tarea_id}'})
 
-# Modificar una tarea por ID
 @app.route('/tareas/<int:tarea_id>', methods=['PUT'])
 def actualizar_tarea(tarea_id):
+    """Modifica una tarea"""
     tarea = Tarea.query.get(tarea_id)
     if tarea is None:
         abort(404)
@@ -93,3 +95,9 @@ def actualizar_tarea(tarea_id):
     db.session.commit()
     
     return jsonify({'tarea': tarea.a_dict()})
+
+# Punto de entrada de la aplicación Flask
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
